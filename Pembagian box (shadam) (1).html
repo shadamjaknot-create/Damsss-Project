@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📦Pembagian BOX (Processing)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    h1 {
+      color: gold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    textarea, input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 15px 0;
+      border: none;
+      border-radius: 6px;
+      background: #222;
+      color: #eee;
+    }
+    button {
+      padding: 10px 15px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .hit {
+      background: #28a745;
+      color: white;
+    }
+    .copy {
+      background: #17a2b8;
+      color: white;
+    }
+    pre {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+    }
+    #skipContainer, #customContainer, #namesContainer, #totalBoxContainer, #startNumberContainer, #actionButtons { display: none; }
+  </style>
+</head>
+<body>
+  <h1>📦Pembagian BOX (Processing)</h1>
+
+  <label>Metode Pembagian</label>
+  <select id="method" onchange="toggleInputs()">
+    <option value="">-- Pilih Metode --</option>
+    <option value="standard">Standar (bagi rata)</option>
+    <option value="custom">Pembagian box custom (Tidak Rata)</option>
+    <option value="skip">Skip Nomor</option>
+  </select>
+
+  <div id="namesContainer">
+    <label>Daftar Nama</label>
+    <textarea id="names" rows="8" placeholder="Pisahkan baris per nama"></textarea>
+  </div>
+
+  <div id="totalBoxContainer">
+    <label>Total Box</label>
+    <input type="number" id="totalBox" placeholder="Masukkan jumlah total box (opsional)">
+  </div>
+
+  <div id="startNumberContainer">
+    <label>Start Number</label>
+    <input type="number" id="startNumber" value="1">
+  </div>
+
+  <div id="customContainer">
+    <label>Input Custom (format: nama jumlah)</label>
+    <textarea id="customInput" rows="6" placeholder="Contoh:\nsadam 3\ndedi 3\nnovri 1\naisyah 4"></textarea>
+  </div>
+
+  <div id="skipContainer">
+    <label>Nomor yang di-skip (pisahkan dengan koma)</label>
+    <input type="text" id="skipNumbers" placeholder="contoh: 5, 10, 56">
+  </div>
+
+  <div id="actionButtons">
+    <button class="hit" onclick="distribute()">Hitung</button>
+    <button class="copy" onclick="copyResult()">Salin ke clipboard</button>
+  </div>
+
+  <pre id="result"></pre>
+
+  <script>
+    function toggleInputs() {
+      const method = document.getElementById('method').value;
+      document.getElementById('namesContainer').style.display = (method === 'standard' || method === 'skip') ? 'block' : 'none';
+      document.getElementById('totalBoxContainer').style.display = (method === 'standard' || method === 'skip') ? 'block' : 'none';
+      document.getElementById('startNumberContainer').style.display = method ? 'block' : 'none';
+      document.getElementById('skipContainer').style.display = method === 'skip' ? 'block' : 'none';
+      document.getElementById('customContainer').style.display = method === 'custom' ? 'block' : 'none';
+      document.getElementById('actionButtons').style.display = method ? 'block' : 'none';
+    }
+
+    function distribute() {
+      const method = document.getElementById('method').value;
+      const totalBoxInput = document.getElementById('totalBox').value.trim();
+      const startNumber = parseInt(document.getElementById('startNumber').value);
+      let result = "";
+
+      if (method === "custom") {
+        const rawCustom = document.getElementById('customInput').value.trim().split("\n").filter(n => n);
+        if (rawCustom.length === 0) {
+          document.getElementById("result").innerText = "⚠️ Masukkan input custom!";
+          return;
+        }
+        let current = startNumber;
+        rawCustom.forEach((line, i) => {
+          const parts = line.trim().split(/\s+/);
+          const name = parts[0];
+          const jml = parseInt(parts[1]);
+          if (isNaN(jml)) return;
+          let from = current;
+          let to = current + jml - 1;
+          if (from === to) {
+            result += `${i+1}. ${name} ${from}\n`;
+          } else {
+            result += `${i+1}. ${name} ${from}-${to}\n`;
+          }
+          current = to + 1;
+        });
+      }
+
+      if (method === "standard") {
+        const rawNames = document.getElementById('names').value.trim().split("\n").filter(n => n);
+        if (rawNames.length === 0) {
+          document.getElementById("result").innerText = "⚠️ Masukkan minimal satu nama!";
+          return;
+        }
+        if (totalBoxInput === "") {
+          document.getElementById("result").innerText = "⚠️ Isi jumlah total box dulu!";
+          return;
+        }
+        const totalBox = parseInt(totalBoxInput);
+        const perPerson = Math.floor(totalBox / rawNames.length);
+        let sisa = totalBox % rawNames.length;
+        let current = startNumber;
+
+        rawNames.forEach((name, i) => {
+          let jml = perPerson + (i < sisa ? 1 : 0);
+          let from = current;
+          let to = current + jml - 1;
+          result += `${i+1}. ${name} ${from}-${to}\n`;
+          current = to + 1;
+        });
+      }
+
+      if (method === "skip") {
+        const rawNames = document.getElementById('names').value.trim().split("\n").filter(n => n);
+        if (rawNames.length === 0) {
+          document.getElementById("result").innerText = "⚠️ Masukkan minimal satu nama!";
+          return;
+        }
+        if (totalBoxInput === "") {
+          document.getElementById("result").innerText = "⚠️ Isi jumlah total box dulu!";
+          return;
+        }
+        const totalBox = parseInt(totalBoxInput);
+        const skipNumbers = document.getElementById('skipNumbers').value
+          .split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+        let allNumbers = [];
+        for (let i = startNumber; i < startNumber + totalBox; i++) {
+          if (!skipNumbers.includes(i)) allNumbers.push(i);
+        }
+
+        const perPerson = Math.floor(allNumbers.length / rawNames.length);
+        let sisa = allNumbers.length % rawNames.length;
+        let index = 0;
+
+        rawNames.forEach((name, i) => {
+          let jml = perPerson + (i < sisa ? 1 : 0);
+          let nums = allNumbers.slice(index, index + jml);
+          index += jml;
+
+          let groups = [];
+          let start = nums[0];
+          for (let j = 1; j <= nums.length; j++) {
+            if (j === nums.length || nums[j] !== nums[j-1] + 1) {
+              if (start === nums[j-1]) groups.push(`${start}`);
+              else groups.push(`${start}-${nums[j-1]}`);
+              start = nums[j];
+            }
+          }
+          result += `${i+1}. ${name} ${groups.join(", ")}\n`;
+        });
+      }
+
+      document.getElementById("result").innerText = result;
+    }
+
+    function copyResult() {
+      const text = document.getElementById("result").innerText;
+      if (!text.trim()) {
+        alert("⚠️ Belum ada hasil untuk disalin!");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Hasil disalin ke clipboard!");
+      });
+    }
+  </script>
+</body>
+</html>
